@@ -1,9 +1,10 @@
 from random import random
 from kivy.app import App
 from kivy.uix.widget import Widget
+from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.properties import ObjectProperty
-from kivy.graphics import Rectangle, Triangle
+from kivy.graphics import Rectangle, RoundedRectangle, Triangle
 from kivy.config import Config
 from kivy.graphics.context_instructions import Color
 
@@ -14,7 +15,8 @@ class BizingoBoardWidget(Widget):
             triangle_size = 50
             # board area
             Color(.5, .5, .5)
-            self.board_area = Rectangle(pos=(60, 60), size=(600, 600))
+            self.board_area = RoundedRectangle(pos=(60, 60), size=(600, 600), radius=[10])
+            self.game_name_label = Label(text="B I Z I N G O", pos=(310,640), font_size=60, font_name='fonts/comicate.ttf') # fonts: comicate, grasping, outwrite, valuoldcaps
 
             #Type 1 triangles
             Color(0, 0, 0)
