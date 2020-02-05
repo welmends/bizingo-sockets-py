@@ -3,37 +3,73 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.properties import ObjectProperty
-from kivy.graphics import Rectangle, RoundedRectangle, Triangle
+from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty
+from kivy.graphics import Line, Rectangle, RoundedRectangle, Triangle, Ellipse
 from kivy.config import Config
 from kivy.graphics.context_instructions import Color
+from kivy.animation import Animation
+
+class BizingoPiece(Widget):
+    def __init__(self, position, circle_radius, **kwargs):
+        super(BizingoPiece, self).__init__(**kwargs)
+
+        with self.canvas:
+            Color(.5, .5, .5)
+            self.piece = Ellipse(pos=position, size=(circle_radius,circle_radius))
+            self.bind(pos = self.updatePosition)
+
+        self.pos = self.piece.pos
+
+    def updatePosition(self, *args):
+        self.piece.pos = self.pos
 
 class BizingoBoardWidget(Widget):
+    piece = ObjectProperty(None)
+
     def __init__(self, **kwargs):
         super(BizingoBoardWidget, self).__init__(**kwargs)
         with self.canvas:
-            triangle_size = 50
+            # default parameters
+            self.triangle_size = 50
+            self.circle_radius = 25
+            
+            # variables
+            self.board_obj = [[],[]]
+            self.board_pos = [[],[]]
+
             # board area
             Color(.5, .5, .5)
             self.board_area = RoundedRectangle(pos=(60, 60), size=(600, 600), radius=[10])
             self.game_name_label = Label(text="B I Z I N G O", pos=(310,640), font_size=60, font_name='fonts/comicate.ttf') # fonts: comicate, grasping, outwrite, valuoldcaps
 
-            #Type 1 triangles
+            # type 1 triangles
             Color(0, 0, 0)
-            self.board = set()
             base_x = self.board_area.pos[0] + 50
             base_y = self.board_area.pos[1] + 80
-            for element in self.generate_triangles_type_1(base_x,base_y,triangle_size):
-                self.board.add(Triangle(points=element))
+            for element in self.generate_triangles_type_1(base_x,base_y,self.triangle_size):
+                self.board_obj[0].append(Triangle(points=element))
+                self.board_pos[0].append(element)
 
-            # Type 0 triangles
+            # type 0 triangles
             Color(1, 1, 1)
-            self.board = set()
             base_x = self.board_area.pos[0] + 50
             base_y = self.board_area.pos[1] + 80
-            for element in self.generate_triangles_type_2(base_x,base_y,triangle_size):
-                self.board.add(Triangle(points=element))
-    
+            for element in self.generate_triangles_type_2(base_x,base_y,self.triangle_size):
+                self.board_obj[1].append(Triangle(points=element))
+                self.board_pos[1].append(element)
+
+            # piece animation example
+            self.bizingo_piece = BizingoPiece(self.cntr_t(self.board_pos[0][0]), self.circle_radius)
+            self.add_widget(self.bizingo_piece)
+            anim = Animation(pos=self.cntr_t(self.board_pos[0][1]), duration=1.) + Animation(pos=self.cntr_t(self.board_pos[0][0]), duration=1.)
+            anim.start(self.bizingo_piece)
+
+    def cntr_t(self, points):
+        # return the center of triangle
+        new_x = ( ((points[0]+points[2]+points[4])/3) - (self.circle_radius/2.0) )
+        new_y = ( ((points[1]+points[3]+points[5])/3) - (self.circle_radius/2.0) )
+        return (new_x, new_y) 
+
     def generate_triangles_type_1(self, base_x, base_y, size):
         triangles_type_1 = []
         amount = [9,10,11,10,9,8,7,6,5,4,3] # Fixed
