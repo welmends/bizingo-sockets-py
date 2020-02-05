@@ -3,11 +3,13 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty
+from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty, StringProperty
 from kivy.graphics import Line, Rectangle, RoundedRectangle, Triangle, Ellipse
+from kivy.clock import Clock
 from kivy.config import Config
 from kivy.graphics.context_instructions import Color
 from kivy.animation import Animation
+from kivy.uix.textinput import TextInput
 
 class BizingoPiece(Widget):
     def __init__(self, position, circle_radius, **kwargs):
@@ -115,11 +117,19 @@ class BizingoBoard(Widget):
         return triangles_type_2
 
 class BizingoChat(Widget):
-
     def __init__(self, **kwargs):
         super(BizingoChat, self).__init__(**kwargs)
         with self.canvas:
+            
             Color(128/255,128/255,128/255)
+            self.text_input = TextInput(text='', pos=(800,80), size=(300,30), multiline=False, font_name='fonts/comicate.ttf')
+            self.text_input.focus = True
+            self.text_input.bind(on_text_validate=self.on_enter)
+            self.add_widget(self.text_input)
+
+    def on_enter(self, instance):
+        print(instance.text)
+        instance.text=''
 
 class BizingoPanel(Widget):
     def __init__(self, **kwargs):
@@ -142,7 +152,7 @@ class BizingoApp(App):
         self.panel = BizingoPanel()
         self.board = BizingoBoard()
         self.chat = BizingoChat()
-
+    
         # add widgets
         parent.add_widget(self.panel)
         parent.add_widget(self.board)
