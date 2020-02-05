@@ -14,7 +14,7 @@ class BizingoPiece(Widget):
         super(BizingoPiece, self).__init__(**kwargs)
 
         with self.canvas:
-            Color(.5, .5, .5)
+            Color(207/255,4/255,6/255)
             self.piece = Ellipse(pos=position, size=(circle_radius,circle_radius))
             self.bind(pos = self.updatePosition)
 
@@ -23,27 +23,34 @@ class BizingoPiece(Widget):
     def updatePosition(self, *args):
         self.piece.pos = self.pos
 
-class BizingoBoardWidget(Widget):
+class BizingoBoard(Widget):
     piece = ObjectProperty(None)
 
     def __init__(self, **kwargs):
-        super(BizingoBoardWidget, self).__init__(**kwargs)
+        super(BizingoBoard, self).__init__(**kwargs)
         with self.canvas:
             # default parameters
             self.triangle_size = 50
-            self.circle_radius = 25
-            
+            self.circle_radius = 15
+            # self.color_board = Color(203,236,215)
+            # self.color_btype1 = Color(65,167,107)
+            # self.color_btype2 = Color(255,253,254)
+            # self.color_ptype1 = Color(207,4,6)
+            # self.color_pctype1 = Color(248,236,18)
+            # self.color_ptype1 = Color(6,2,6)
+            # self.color_pctype1 = Color(108,0,213)
+
             # variables
             self.board_obj = [[],[]]
             self.board_pos = [[],[]]
 
             # board area
-            Color(.5, .5, .5)
+            Color(203/255,236/255,215/255)
             self.board_area = RoundedRectangle(pos=(60, 60), size=(600, 600), radius=[10])
             self.game_name_label = Label(text="B I Z I N G O", pos=(310,640), font_size=60, font_name='fonts/comicate.ttf') # fonts: comicate, grasping, outwrite, valuoldcaps
 
             # type 1 triangles
-            Color(0, 0, 0)
+            Color(65/255,167/255,107/255)
             base_x = self.board_area.pos[0] + 50
             base_y = self.board_area.pos[1] + 80
             for element in self.generate_triangles_type_1(base_x,base_y,self.triangle_size):
@@ -51,7 +58,7 @@ class BizingoBoardWidget(Widget):
                 self.board_pos[0].append(element)
 
             # type 0 triangles
-            Color(1, 1, 1)
+            Color(255/255, 253/255, 254/255)
             base_x = self.board_area.pos[0] + 50
             base_y = self.board_area.pos[1] + 80
             for element in self.generate_triangles_type_2(base_x,base_y,self.triangle_size):
@@ -106,7 +113,21 @@ class BizingoBoardWidget(Widget):
                 f = b
                 triangles_type_2.append([a,b,c,d,e,f])
         return triangles_type_2
-                    
+
+class BizingoChat(Widget):
+
+    def __init__(self, **kwargs):
+        super(BizingoChat, self).__init__(**kwargs)
+        with self.canvas:
+            Color(128/255,128/255,128/255)
+
+class BizingoPanel(Widget):
+    def __init__(self, **kwargs):
+        super(BizingoPanel, self).__init__(**kwargs)
+        with self.canvas:
+            Color(100/255,100/255,100/255)
+            self.panel = Rectangle(pos=(0, 0), size=(1280, 720))
+            
 class BizingoApp(App):
     def build(self):
         # Configs
@@ -118,13 +139,16 @@ class BizingoApp(App):
         parent = Widget()
 
         # widgets
-        self.board = BizingoBoardWidget()
-        
+        self.panel = BizingoPanel()
+        self.board = BizingoBoard()
+        self.chat = BizingoChat()
+
         # add widgets
+        parent.add_widget(self.panel)
         parent.add_widget(self.board)
+        parent.add_widget(self.chat)
 
         return parent
-
 
 if __name__ == '__main__':
     BizingoApp().run()
