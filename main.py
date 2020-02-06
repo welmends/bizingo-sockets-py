@@ -1,15 +1,56 @@
-from random import random
+import kivy
 from kivy.app import App
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.config import Config
+from kivy.clock import Clock
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.scrollview import ScrollView
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
-from kivy.uix.button import Button
-from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty, StringProperty
-from kivy.graphics import Line, Rectangle, RoundedRectangle, Triangle, Ellipse
-from kivy.clock import Clock
-from kivy.config import Config
-from kivy.graphics.context_instructions import Color
-from kivy.animation import Animation
 from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.graphics import Line, Rectangle, RoundedRectangle, Triangle, Ellipse
+from kivy.graphics.context_instructions import Color
+from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty, StringProperty
+from kivy.animation import Animation
+
+# Utils
+
+class ScrollableLabel(ScrollView):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.scroll_type = ['bars']
+
+        self.layout = GridLayout(cols=1, size_hint_y=None)
+        self.add_widget(self.layout)
+
+        self.chat_history = Label(size_hint_y=None, markup=True)
+        self.layout.add_widget(self.chat_history)
+
+        self.scroll_to_point = Label()
+        self.layout.add_widget(self.scroll_to_point)
+
+    def on_size(self, *args):
+        self.canvas.before.clear()
+        with self.canvas.before:
+            Color(0, 0, 0)
+            Rectangle(pos=self.pos, size=self.size)
+
+    def update_chat_history(self, message):
+        self.chat_history.text += '\n' + message
+
+        # update
+        self.layout.height = self.chat_history.texture_size[1] + 15
+        self.chat_history.height = self.chat_history.texture_size[1]
+        self.chat_history.text_size = (self.chat_history.width * 0.98, None)
+
+        # scroll
+        self.scroll_to(self.scroll_to_point)
+
+
+# Bizingo
 
 class BizingoPiece(Widget):
     def __init__(self, position, circle_radius, **kwargs):
@@ -116,28 +157,100 @@ class BizingoBoard(Widget):
                 triangles_type_2.append([a,b,c,d,e,f])
         return triangles_type_2
 
-class BizingoChat(Widget):
+class BizingoChat(GridLayout):
     def __init__(self, **kwargs):
         super(BizingoChat, self).__init__(**kwargs)
+
+        # GridLayout flags
+        self.cols = 1
+        self.rows = 2
+        self.padding = ([0, 20, 50, 20])
+
+        # chat_scrllabel
+        self.chat_scrllabel = ScrollableLabel()
+        self.add_widget(self.chat_scrllabel)
+
+        # text_input
+        self.text_input = TextInput(text='', size_hint_y=None, height=50, multiline=False)
+        self.text_input.focus = True
+        # self.text_input.halign = 'left'
+        # self.text_input.valign = 'middle'
+        self.text_input.bind(on_text_validate=self.on_enter)
+        self.add_widget(self.text_input)
+
+    def on_enter(self, instance):
+        self.chat_scrllabel.update_chat_history(self.text_input.text)
+        instance.text=''
+
+class BizingoGamePage(GridLayout):
+    def __init__(self, **kwargs):
+        super(BizingoGamePage, self).__init__(**kwargs)
+
+        # GridLayout flags
+        self.cols = 2
+        self.rows = 1
+        self.spacing = ([150,0])
+
+        # Backgorund
         with self.canvas:
+            Color(100/255,100/255,100/255)
+            self.panel = Rectangle(pos=(0, 0), size=(1280, 720))
+
+        # Board
+        self.board = BizingoBoard()
+        self.add_widget(self.board)
+
+        # Chat
+        self.chat = BizingoChat()
+        self.add_widget(self.chat)
+
+class BizingoLoginPage(Widget):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        with self.canvas:
+
+            Color(100/255,100/255,100/255)
+            self.panel = Rectangle(pos=(0, 0), size=(1280, 720))
+
+            # fonts: comicate, grasping, outwrite, valuoldcaps
+            self.game_name_label = Label(text="B I Z I N G O  G A M E", pos=(600,500), font_size=100, font_name='fonts/grasping.ttf')
             
-            Color(128/255,128/255,128/255)
-            self.text_input = TextInput(text='', pos=(800,80), size=(300,30), multiline=False, font_name='fonts/comicate.ttf')
-            self.text_input.focus = True
-            self.text_input.bind(on_text_validate=self.on_enter)
-            self.add_widget(self.text_input)
+
+            self.ip_text_label = Label(text="IP", pos=(600,310), font_size=40)
+
+            self.ip_text_input = TextInput(text='', pos=(550,300), size=(200,30), multiline=False, font_name='fonts/comicate.ttf')
+            self.ip_text_input.focus = True
+            self.ip_text_input.halign = 'center'
+            self.ip_text_input.valign = 'middle'
+            self.ip_text_input.bind(on_text_validate=self.on_enter)
+            
+
+            self.port_text_label = Label(text="Porta", pos=(600,210), font_size=40)
+
+            self.port_text_input = TextInput(text='', pos=(550,200), size=(200,30), multiline=False, font_name='fonts/comicate.ttf')
+            self.port_text_input.focus = True
+            self.port_text_input.halign = 'center'
+            self.port_text_input.valign = 'middle'
+            self.port_text_input.bind(on_text_validate=self.on_enter)
+
+            self.add_widget(self.ip_text_label)
+            self.add_widget(self.ip_text_input)
+            self.add_widget(self.port_text_label)
+            self.add_widget(self.port_text_input)
+
+            self.ip_button = Button(text="Connect", pos=(600,100), size=(100,50))
+            self.ip_button.bind(on_release=self.connect)
+            self.add_widget(self.ip_button)  
 
     def on_enter(self, instance):
         print(instance.text)
         instance.text=''
 
-class BizingoPanel(Widget):
-    def __init__(self, **kwargs):
-        super(BizingoPanel, self).__init__(**kwargs)
-        with self.canvas:
-            Color(100/255,100/255,100/255)
-            self.panel = Rectangle(pos=(0, 0), size=(1280, 720))
-            
+    def connect(self, _):
+        print('connecting..')
+        bizingo.screen_manager.current = 'game'
+
 class BizingoApp(App):
     def build(self):
         # Configs
@@ -145,20 +258,23 @@ class BizingoApp(App):
         Config.set('graphics', 'width', '1280')
         Config.set('graphics', 'height', '720')
 
-        # Parent widget
-        parent = Widget()
+        # Screen Manager
+        self.screen_manager = ScreenManager()
+        
+        # Login Page
+        self.login_page = BizingoLoginPage()
+        screen = Screen(name='login')
+        screen.add_widget(self.login_page)
+        self.screen_manager.add_widget(screen)
 
-        # widgets
-        self.panel = BizingoPanel()
-        self.board = BizingoBoard()
-        self.chat = BizingoChat()
-    
-        # add widgets
-        parent.add_widget(self.panel)
-        parent.add_widget(self.board)
-        parent.add_widget(self.chat)
+        # Game Page
+        self.game_page = BizingoGamePage()
+        screen = Screen(name='game')
+        screen.add_widget(self.game_page)
+        self.screen_manager.add_widget(screen)
 
-        return parent
+        return self.screen_manager
 
 if __name__ == '__main__':
-    BizingoApp().run()
+    bizingo = BizingoApp()
+    bizingo.run()
