@@ -54,6 +54,7 @@ Builder.load_string('''
             ellipse: self.size[0] + self.pos[0] - self.size[1]/2.0, self.pos[1], self.size[1], self.size[1], 360, 540
 ''')
 
+
 class RoundedTextInput(TextInput):
     def build(self):
         return self
@@ -116,27 +117,34 @@ class BizingoPiece(Widget):
     def updatePosition(self, *args):
         self.piece.pos = self.pos
 
+class BizingoDrawBoard(Widget):
+    def __init__(self, **kwargs):
+        super(BizingoDrawBoard, self).__init__(**kwargs)
+        
+        with self.canvas:
+            Color(1,1,1,1)
+            self.draw_area = Rectangle(pos=(0, 0), size=(1280, 720))
+
 class BizingoBoard(Widget):
     piece = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(BizingoBoard, self).__init__(**kwargs)
         with self.canvas:
+
             # default parameters
             self.triangle_size = 50
             self.circle_radius = 15
-            self.mouse_pos     = (0,0)
+            self.mouse_pos = (0,0)
+            self.mark = None
+            self.last_cType = 0
+            self.last_cPiece = 0
 
             # variables
             self.board_obj = [[],[]]
             self.board_pos = [[],[]]
             self.board_cnt = [[],[]]
             self.pieces    = [[],[]]
-
-            # board button
-            self.board_bt   = Button(pos=(65, 65), size=(590, 590))
-            self.board_bt.bind(on_release=self.handle)
-            self.add_widget(self.board_bt)
 
             # board area
             Color(203/255,236/255,215/255)
@@ -157,7 +165,7 @@ class BizingoBoard(Widget):
             for element in self.generate_triangles_type_2(base_x,base_y,self.triangle_size):
                 self.board_obj[1].append(Triangle(points=element))
                 self.board_pos[1].append(element)
-                self.board_cnt[1].append(self.cntr_t(element))
+                self.board_cnt[1].append(self.cntr_t(element))            
 
             # player 1 pieces
             self.pieces[0].append(BizingoPiece(self.board_cnt[0][13], self.circle_radius, 1))
@@ -199,34 +207,55 @@ class BizingoBoard(Widget):
             self.pieces[1].append(BizingoPiece(self.board_cnt[1][51], self.circle_radius, 4))
             self.pieces[1].append(BizingoPiece(self.board_cnt[1][54], self.circle_radius, 4))
 
-            # bind
-            #self.bind(on_release=self.release)
-
+            self.bdb = BizingoDrawBoard()
+            self.bdb.canvas.clear()
             # # piece animation example
             # anim = Animation(pos=self.cntr_t(self.board_pos[0][1]), duration=1.) + Animation(pos=self.cntr_t(self.board_pos[0][0]), duration=1.)
             # anim.start(self.pieces[0][0])
 
-    def handle(self, instance):
-        print(self.mouse_pos)
 
-        x = self.mouse_pos[0]
-        y = self.mouse_pos[1]
-        close_type = 0
-        close_piece = 0
-        close_dist = math.sqrt( (x-self.board_cnt[0][0][0])**2 + (y-self.board_cnt[0][0][1])**2 )
-        for i in range(len(self.board_cnt)):
-            for j in range(len(self.board_cnt[i])):
-                dist = math.sqrt( (x-self.board_cnt[i][j][0])**2 + (y-self.board_cnt[i][j][1])**2 )
-                if dist < close_dist:
-                    close_dist = dist
-                    close_type = i
-                    close_piece = j
+    def on_touch_down(self, touch):
+        if touch.is_double_tap:
+            x = touch.x
+            y = touch.y
+            cType = 0
+            cPiece = 0
+            cDist = math.sqrt( (x-self.board_cnt[0][0][0])**2 + (y-self.board_cnt[0][0][1])**2 )
+            for i in range(len(self.board_cnt)):
+                for j in range(len(self.board_cnt[i])):
+                    dist = math.sqrt( (x-self.board_cnt[i][j][0])**2 + (y-self.board_cnt[i][j][1])**2 )
+                    if dist < cDist:
+                        cDist = dist
+                        cType = i
+                        cPiece = j
 
-        print(close_type,close_piece)
-
-
-    def on_touch_move(self,touch):
-        self.mouse_pos = (touch.x,touch.y)
+            print('> Type {} Pos {}'.format(cType,cPiece))
+            # Actions
+            if self.mark is None:
+                self.bdb.canvas.clear()
+                with self.bdb.canvas:
+                    Color(0,0,0,.3)
+                    self.mark = Triangle(points=self.board_pos[cType][cPiece])
+                    self.last_cType = cType
+                    self.last_cPiece = cPiece
+                    
+            else:
+                self.mark = None
+                self.bdb.canvas.clear()
+                anim = Animation(pos=self.board_cnt[cType][cPiece], duration=1.)
+                ccType = 0
+                ccPiece = 0
+                x = self.board_cnt[self.last_cType][self.last_cPiece][0]
+                y = self.board_cnt[self.last_cType][self.last_cPiece][1]
+                cDist = math.sqrt( (x-self.pieces[0][0].pos[0])**2 + (y-self.pieces[0][0].pos[1])**2 )
+                for i in range(len(self.pieces)):
+                    for j in range(len(self.pieces[i])):
+                        dist = math.sqrt( (x-self.pieces[i][j].pos[0])**2 + (y-self.pieces[i][j].pos[1])**2 )
+                        if dist < cDist:
+                            cDist = dist
+                            ccType = i
+                            ccPiece = j
+                anim.start(self.pieces[ccType][ccPiece])
 
     def cntr_t(self, points):
         # return the center of triangle
