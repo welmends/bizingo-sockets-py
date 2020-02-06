@@ -15,6 +15,7 @@ from kivy.graphics.context_instructions import Color
 from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty, StringProperty
 from kivy.animation import Animation
 from kivy.lang import Builder
+import math
 
 # Utils
 
@@ -124,11 +125,18 @@ class BizingoBoard(Widget):
             # default parameters
             self.triangle_size = 50
             self.circle_radius = 15
+            self.mouse_pos     = (0,0)
 
             # variables
             self.board_obj = [[],[]]
             self.board_pos = [[],[]]
+            self.board_cnt = [[],[]]
             self.pieces    = [[],[]]
+
+            # board button
+            self.board_bt   = Button(pos=(65, 65), size=(590, 590))
+            self.board_bt.bind(on_release=self.handle)
+            self.add_widget(self.board_bt)
 
             # board area
             Color(203/255,236/255,215/255)
@@ -142,56 +150,83 @@ class BizingoBoard(Widget):
             for element in self.generate_triangles_type_1(base_x,base_y,self.triangle_size):
                 self.board_obj[0].append(Triangle(points=element))
                 self.board_pos[0].append(element)
+                self.board_cnt[0].append(self.cntr_t(element))
 
             # type 2 triangles
             Color(65/255 ,167/255,107/255)
             for element in self.generate_triangles_type_2(base_x,base_y,self.triangle_size):
                 self.board_obj[1].append(Triangle(points=element))
                 self.board_pos[1].append(element)
+                self.board_cnt[1].append(self.cntr_t(element))
 
             # player 1 pieces
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][13]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][14]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][15]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][16]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][17]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][23]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][24]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][25]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][26]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][27]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][28]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][32]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][34]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][35]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][36]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][38]), self.circle_radius, 1))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][33]), self.circle_radius, 2))
-            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][37]), self.circle_radius, 2))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][13], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][14], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][15], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][16], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][17], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][23], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][24], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][25], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][26], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][27], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][28], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][32], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][34], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][35], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][36], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][38], self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][33], self.circle_radius, 2))
+            self.pieces[0].append(BizingoPiece(self.board_cnt[0][37], self.circle_radius, 2))
 
             # player 2 pieces
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][50]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][52]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][53]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][55]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][58]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][59]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][60]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][61]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][62]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][65]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][66]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][67]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][68]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][71]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][72]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][73]), self.circle_radius, 3))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][51]), self.circle_radius, 4))
-            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][54]), self.circle_radius, 4))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][50], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][52], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][53], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][55], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][58], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][59], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][60], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][61], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][62], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][65], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][66], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][67], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][68], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][71], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][72], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][73], self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][51], self.circle_radius, 4))
+            self.pieces[1].append(BizingoPiece(self.board_cnt[1][54], self.circle_radius, 4))
+
+            # bind
+            #self.bind(on_release=self.release)
 
             # # piece animation example
-            anim = Animation(pos=self.cntr_t(self.board_pos[0][1]), duration=1.) + Animation(pos=self.cntr_t(self.board_pos[0][0]), duration=1.)
-            anim.start(self.pieces[0][0])
+            # anim = Animation(pos=self.cntr_t(self.board_pos[0][1]), duration=1.) + Animation(pos=self.cntr_t(self.board_pos[0][0]), duration=1.)
+            # anim.start(self.pieces[0][0])
+
+    def handle(self, instance):
+        print(self.mouse_pos)
+
+        x = self.mouse_pos[0]
+        y = self.mouse_pos[1]
+        close_type = 0
+        close_piece = 0
+        close_dist = math.sqrt( (x-self.board_cnt[0][0][0])**2 + (y-self.board_cnt[0][0][1])**2 )
+        for i in range(len(self.board_cnt)):
+            for j in range(len(self.board_cnt[i])):
+                dist = math.sqrt( (x-self.board_cnt[i][j][0])**2 + (y-self.board_cnt[i][j][1])**2 )
+                if dist < close_dist:
+                    close_dist = dist
+                    close_type = i
+                    close_piece = j
+
+        print(close_type,close_piece)
+
+
+    def on_touch_move(self,touch):
+        self.mouse_pos = (touch.x,touch.y)
 
     def cntr_t(self, points):
         # return the center of triangle
