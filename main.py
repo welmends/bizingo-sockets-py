@@ -14,9 +14,49 @@ from kivy.graphics import Line, Rectangle, RoundedRectangle, Triangle, Ellipse
 from kivy.graphics.context_instructions import Color
 from kivy.properties import ObjectProperty, NumericProperty, ReferenceListProperty, StringProperty
 from kivy.animation import Animation
+from kivy.lang import Builder
 
 # Utils
 
+Builder.load_string('''
+#:import C kivy.utils.get_color_from_hex
+
+<RoundedTextInput@TextInput>:
+    font_size: '14dp'
+    background_color: 0,0,0,0
+    cursor_color: C('#ffffff')
+    canvas.before:
+        Color:
+            rgba: C('#ffffff')
+    canvas.after:
+        Color:
+            rgb: C('#0f192e')
+        Ellipse:
+            angle_start:180
+            angle_end:360
+            pos:(self.pos[0] - self.size[1]/2.0, self.pos[1])
+            size: (self.size[1], self.size[1])
+        Ellipse:
+            angle_start:360
+            angle_end:540
+            pos: (self.size[0] + self.pos[0] - self.size[1]/2.0, self.pos[1])
+            size: (self.size[1], self.size[1])
+        Color:
+            rgba: C('#3f92db')
+        Line:
+            points: self.pos[0] , self.pos[1], self.pos[0] + self.size[0], self.pos[1]
+        Line:
+            points: self.pos[0], self.pos[1] + self.size[1], self.pos[0] + self.size[0], self.pos[1] + self.size[1]
+        Line:
+            ellipse: self.pos[0] - self.size[1]/2.0, self.pos[1], self.size[1], self.size[1], 180, 360
+        Line:
+            ellipse: self.size[0] + self.pos[0] - self.size[1]/2.0, self.pos[1], self.size[1], self.size[1], 360, 540
+''')
+
+class RoundedTextInput(TextInput):
+    def build(self):
+        return self
+    
 class ScrollableLabel(ScrollView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -33,7 +73,7 @@ class ScrollableLabel(ScrollView):
         self.layout.add_widget(self.scroll_to_point)
 
     def on_size(self, *args):
-        self.canvas.before.clear()
+        #self.canvas.before.clear()
         with self.canvas.before:
             Color(0, 0, 0)
             Rectangle(pos=self.pos, size=self.size)
@@ -53,11 +93,20 @@ class ScrollableLabel(ScrollView):
 # Bizingo
 
 class BizingoPiece(Widget):
-    def __init__(self, position, circle_radius, **kwargs):
+    def __init__(self, position, circle_radius, type, **kwargs):
         super(BizingoPiece, self).__init__(**kwargs)
+        self.type = type
 
         with self.canvas:
-            Color(207/255,4/255,6/255)
+            if self.type==1:# player 1
+                Color(207/255,4/255,6/255)
+            elif self.type==2: # player 1 (cap)
+                Color(248/255,236/255,18/255)
+            elif self.type==3: # player 2 
+                Color(6/255,2/255,6/255)
+            elif self.type==4: # player 2 (cap)
+                Color(108/255,0/255,213/255)
+
             self.piece = Ellipse(pos=position, size=(circle_radius,circle_radius))
             self.bind(pos = self.updatePosition)
 
@@ -75,44 +124,74 @@ class BizingoBoard(Widget):
             # default parameters
             self.triangle_size = 50
             self.circle_radius = 15
-            # self.color_board = Color(203,236,215)
-            # self.color_btype1 = Color(65,167,107)
-            # self.color_btype2 = Color(255,253,254)
-            # self.color_ptype1 = Color(207,4,6)
-            # self.color_pctype1 = Color(248,236,18)
-            # self.color_ptype1 = Color(6,2,6)
-            # self.color_pctype1 = Color(108,0,213)
 
             # variables
             self.board_obj = [[],[]]
             self.board_pos = [[],[]]
+            self.pieces    = [[],[]]
 
             # board area
             Color(203/255,236/255,215/255)
             self.board_area = RoundedRectangle(pos=(60, 60), size=(600, 600), radius=[10])
             self.game_name_label = Label(text="B I Z I N G O", pos=(310,640), font_size=60, font_name='fonts/comicate.ttf') # fonts: comicate, grasping, outwrite, valuoldcaps
-
-            # type 1 triangles
-            Color(65/255,167/255,107/255)
             base_x = self.board_area.pos[0] + 50
             base_y = self.board_area.pos[1] + 80
+
+            # type 1 triangles
+            Color(255/255,253/255,254/255)
             for element in self.generate_triangles_type_1(base_x,base_y,self.triangle_size):
                 self.board_obj[0].append(Triangle(points=element))
                 self.board_pos[0].append(element)
 
-            # type 0 triangles
-            Color(255/255, 253/255, 254/255)
-            base_x = self.board_area.pos[0] + 50
-            base_y = self.board_area.pos[1] + 80
+            # type 2 triangles
+            Color(65/255 ,167/255,107/255)
             for element in self.generate_triangles_type_2(base_x,base_y,self.triangle_size):
                 self.board_obj[1].append(Triangle(points=element))
                 self.board_pos[1].append(element)
 
-            # piece animation example
-            self.bizingo_piece = BizingoPiece(self.cntr_t(self.board_pos[0][0]), self.circle_radius)
-            self.add_widget(self.bizingo_piece)
+            # player 1 pieces
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][13]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][14]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][15]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][16]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][17]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][23]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][24]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][25]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][26]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][27]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][28]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][32]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][34]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][35]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][36]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][38]), self.circle_radius, 1))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][33]), self.circle_radius, 2))
+            self.pieces[0].append(BizingoPiece(self.cntr_t(self.board_pos[0][37]), self.circle_radius, 2))
+
+            # player 2 pieces
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][50]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][52]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][53]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][55]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][58]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][59]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][60]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][61]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][62]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][65]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][66]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][67]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][68]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][71]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][72]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][73]), self.circle_radius, 3))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][51]), self.circle_radius, 4))
+            self.pieces[1].append(BizingoPiece(self.cntr_t(self.board_pos[1][54]), self.circle_radius, 4))
+
+            # # piece animation example
             anim = Animation(pos=self.cntr_t(self.board_pos[0][1]), duration=1.) + Animation(pos=self.cntr_t(self.board_pos[0][0]), duration=1.)
-            anim.start(self.bizingo_piece)
+            anim.start(self.pieces[0][0])
 
     def cntr_t(self, points):
         # return the center of triangle
@@ -122,6 +201,24 @@ class BizingoBoard(Widget):
 
     def generate_triangles_type_1(self, base_x, base_y, size):
         triangles_type_1 = []
+        amount = [10,11,10,9,8,7,6,5,4,3,2] # Fixed
+        a = b = c = d = e = f = 0
+        a = base_x
+        b = base_y
+        for triangles in amount:
+            a = base_x + int(size/2) - int(size/2)*(1+(triangles-amount[0]))
+            b = b + (size-10)
+            for triangle in range(triangles):
+                a = a + size
+                c = a - int(size/2)
+                d = b - (size-10)
+                e = a - size
+                f = b
+                triangles_type_1.append([a,b,c,d,e,f])
+        return triangles_type_1
+
+    def generate_triangles_type_2(self, base_x, base_y, size):
+        triangles_type_2 = []
         amount = [9,10,11,10,9,8,7,6,5,4,3] # Fixed
         a = b = c = d = e = f = 0
         a = base_x - size
@@ -136,24 +233,6 @@ class BizingoBoard(Widget):
                 e = a + size
                 f = b
 
-                triangles_type_1.append([a,b,c,d,e,f])
-        return triangles_type_1
-
-    def generate_triangles_type_2(self, base_x, base_y, size):
-        triangles_type_2 = []
-        amount = [10,11,10,9,8,7,6,5,4,3,2] # Fixed
-        a = b = c = d = e = f = 0
-        a = base_x
-        b = base_y
-        for triangles in amount:
-            a = base_x + int(size/2) - int(size/2)*(1+(triangles-amount[0]))
-            b = b + (size-10)
-            for triangle in range(triangles):
-                a = a + size
-                c = a - int(size/2)
-                d = b - (size-10)
-                e = a - size
-                f = b
                 triangles_type_2.append([a,b,c,d,e,f])
         return triangles_type_2
 
@@ -164,17 +243,15 @@ class BizingoChat(GridLayout):
         # GridLayout flags
         self.cols = 1
         self.rows = 2
-        self.padding = ([0, 20, 50, 20])
+        self.padding = ([0, 20, 60, 20])
 
         # chat_scrllabel
         self.chat_scrllabel = ScrollableLabel()
         self.add_widget(self.chat_scrllabel)
 
         # text_input
-        self.text_input = TextInput(text='', size_hint_y=None, height=50, multiline=False)
+        self.text_input = RoundedTextInput(text='', size_hint_y=None, height=35, multiline=False)
         self.text_input.focus = True
-        # self.text_input.halign = 'left'
-        # self.text_input.valign = 'middle'
         self.text_input.bind(on_text_validate=self.on_enter)
         self.add_widget(self.text_input)
 
